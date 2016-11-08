@@ -29,6 +29,7 @@ extern "C" {
 typedef struct audit_handler_struct audit_handler_t;
 typedef struct audit_handler_file_config_struct audit_handler_file_config_t;
 typedef struct audit_handler_syslog_config_struct audit_handler_syslog_config_t;
+typedef struct audit_handler_mongo_config_struct audit_handler_mongo_config_t;
 typedef struct audit_handler_buffered_struct audit_handler_buffered_t;
 typedef void * audit_handler_data_t;
 
@@ -42,6 +43,14 @@ struct audit_handler_struct
   int (*close)(audit_handler_t *);
   void (*set_option)(audit_handler_t *, audit_handler_option_t, void *);
   audit_handler_data_t data;
+};
+
+struct audit_handler_mongo_config_struct
+{
+  const char *uri;
+  const char *collection;
+  logger_prolog_func_t header;
+  logger_epilog_func_t footer;
 };
 
 struct audit_handler_file_config_struct
@@ -108,6 +117,7 @@ void audit_handler_set_option(audit_handler_t *handler,
 
 audit_handler_t *audit_handler_file_open(audit_handler_file_config_t *opts);
 audit_handler_t *audit_handler_syslog_open(audit_handler_syslog_config_t *opts);
+audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts);
 
 #ifdef __cplusplus
 }
