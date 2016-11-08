@@ -1,0 +1,5 @@
+CMakeCache.txt
+CMakeFiles/*
+Makefile
+audit_log.so
+cmake_install.cmake
