@@ -35,15 +35,15 @@ struct audit_handler_mongo_data_struct
 
 audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 {
-	audit_handler_t *handler = (audit_handler_t*)
-		 calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
+	audit_handler_mongo_data_t *data;
+	audit_handler_t *handler = (audit_handler_t*) calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
 	if (handler != NULL)
 	{
 		// Initialize mongo client internals
-		mongo_init();
+		mongoc_init();
 		
 		// Init data struct and set info
-		audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*) (handler + 1);
+		data = (audit_handler_mongo_data_t*) (handler + 1);
 		data->struct_size = sizeof(audit_handler_mongo_data_t);
 		data->footer = opts->footer;
 		data->header = opts->header;
@@ -76,7 +76,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 
 static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len)
 {
-	audit_handler_mongo_data_t *data= (audit_handler_mongo_data_t*) handler->data;
+	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*) handler->data;
 	
 	// Convert the *buf (JSON) string to BSON
 	bson_error_t error;
@@ -107,7 +107,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 
 static int audit_handler_mongo_flush(audit_handler_t *handler)
 {
-	audit_handler_mongo_data_t *data= (audit_handler_mongo_data_t*) handler->data;
+	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*) handler->data;
 	bson_t *command = BCON_NEW("ping", BCON_INT32(1));
 	bson_t reply;
 	bson_error_t error;
