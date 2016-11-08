@@ -15,7 +15,6 @@
 
 option(ENABLE_AUDIT_MONGO "Build Audit Log with MongoDB C Driver" ON)
 
-set (AUDIT_HAVE_MONGO 1)
 set (SOURCES audit_log.c file_logger.c buffer.c audit_file.c audit_syslog.c)
 
 if (ENABLE_AUDIT_MONGO STREQUAL ON)
@@ -39,8 +38,11 @@ if (ENABLE_AUDIT_MONGO STREQUAL ON)
         lib
     )
 	
-	set(BSON_LIBRARIES ${BSON_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-    set(LIBS ${LIBS} ${BSON_LIBRARIES})
+	INCLUDE_DIRECTORIES(${BSON_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(audit_log ${BSON_LIBRARY})
+	
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAUDIT_HAVE_MONGO")
+	
     set(SOURCES ${SOURCES} audit_mongo.c)
     
 endif ()
