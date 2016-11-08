@@ -33,6 +33,11 @@ struct audit_handler_mongo_data_struct
   logger_epilog_func_t footer;
 };
 
+static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len);
+static int audit_handler_mongo_flush(audit_handler_t *handler);
+static int audit_handler_mongo_flush(audit_handler_t *handler);
+int audit_handler_mongo_close(audit_handler_t *handler);
+
 audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 {
 	audit_handler_mongo_data_t *data;
@@ -61,7 +66,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		else
 		{
 			// Set parameters for the mongo information
-			data->collection = mongoc_client_get_collection (client, "percona", opts->collection);
+			data->collection = mongoc_client_get_collection (data->client, "percona", opts->collection);
 			
 			// Set parameters for the handler struct
 			handler->data = data;
@@ -84,7 +89,6 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!bson)
 	{
 		// Failed to parse JSON string
-		fprintf_timestamp(stderr);
 		fprintf(stderr, "Error parsing JSON: %s\n", error.message);
 		return 0;
 	}
@@ -95,7 +99,6 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, bson, NULL, &error))
 	{
 		// Failed to add document
-		fprintf_timestamp(stderr);
 		fprintf(stderr, "Error parsing JSON: %s\n", error.message);
 		return 0;
 	}
