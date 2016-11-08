@@ -38,8 +38,11 @@ enum audit_log_policy_t { ALL, NONE, LOGINS, QUERIES };
 enum audit_log_strategy_t
   { ASYNCHRONOUS, PERFORMANCE, SEMISYNCHRONOUS, SYNCHRONOUS };
 enum audit_log_format_t { OLD, NEW, JSON, CSV };
+#ifdef AUDIT_HAVE_MONGO
 enum audit_log_handler_t { HANDLER_FILE, HANDLER_SYSLOG, HANDLER_MONGO };
-
+#else
+enum audit_log_handler_t { HANDLER_FILE, HANDLER_SYSLOG };
+#endif
 typedef void (*escape_buf_func_t)(const char *, size_t *, char *, size_t *);
 
 static audit_handler_t *log_handler= NULL;
@@ -60,16 +63,18 @@ char default_audit_log_syslog_ident[] = "percona-audit";
 ulong audit_log_syslog_facility= 0;
 ulong audit_log_syslog_priority= 0;
 
+#ifdef AUDIT_HAVE_MONGO
 char default_audit_log_mongo_collection[] = "audit";
 char default_audit_log_mongo_uri[] = "mongodb://";
 
 char *audit_log_mongo_collection;
 char *audit_log_mongo_uri;
+#endif
 
 static int audit_log_syslog_facility_codes[]=
   { LOG_USER,   LOG_AUTHPRIV, LOG_CRON,   LOG_DAEMON, LOG_FTP,
     LOG_KERN,   LOG_LPR,      LOG_MAIL,   LOG_NEWS,
-#if (defined LOG_SECURITY)
+#ifdef LOG_SECURITY)
     LOG_SECURITY,
 #endif
     LOG_SYSLOG, LOG_AUTH,     LOG_UUCP,   LOG_LOCAL0, LOG_LOCAL1,
@@ -80,7 +85,7 @@ static int audit_log_syslog_facility_codes[]=
 static const char *audit_log_syslog_facility_names[]=
   { "LOG_USER",   "LOG_AUTHPRIV", "LOG_CRON",   "LOG_DAEMON", "LOG_FTP",
     "LOG_KERN",   "LOG_LPR",      "LOG_MAIL",   "LOG_NEWS",
-#if (defined LOG_SECURITY)
+#ifdef LOG_SECURITY)
     "LOG_SECURITY",
 #endif
     "LOG_SYSLOG", "LOG_AUTH",     "LOG_UUCP",   "LOG_LOCAL0", "LOG_LOCAL1",
@@ -572,6 +577,7 @@ size_t audit_log_footer(char *buf, size_t buflen)
 static
 int init_new_log_file()
 {
+#ifdef AUDIT_HAVE_MONGO
   if (audit_log_handler == HANDLER_MONGO)
   {
     audit_handler_mongo_config_t opts;
@@ -589,7 +595,9 @@ int init_new_log_file()
       return(1);
     }
   }
-  else if (audit_log_handler == HANDLER_FILE)
+  else
+#endif
+  if (audit_log_handler == HANDLER_FILE)
   {
     audit_handler_file_config_t opts;
     opts.name= audit_log_file;
@@ -806,8 +814,13 @@ static MYSQL_SYSVAR_ENUM(format, audit_log_format,
        "The audit log file format.", NULL, NULL,
        ASYNCHRONOUS, &audit_log_format_typelib);
 
+#ifdef AUDIT_HAVE_MONGO
 static const char *audit_log_handler_names[]=
   { "FILE", "SYSLOG", "MONGO", 0 };
+#else
+static const char *audit_log_handler_names[]=
+  { "FILE", "SYSLOG", 0 };
+#endif
 static TYPELIB audit_log_handler_typelib=
 {
   array_elements(audit_log_handler_names) - 1, "audit_log_handler_typelib",
@@ -916,6 +929,7 @@ static MYSQL_SYSVAR_ENUM(syslog_priority, audit_log_syslog_priority,
        NULL, NULL, 0,
        &audit_log_syslog_priority_typelib);
 
+#ifdef AUDIT_HAVE_MONGO
 static MYSQL_SYSVAR_STR(mongo_collection, audit_log_mongo_collection,
   PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
   "The mongo collection to be used, if MONGODB handler is used.",
@@ -924,6 +938,7 @@ static MYSQL_SYSVAR_STR(mongo_collection, audit_log_mongo_collection,
 static MYSQL_SYSVAR_STR(mongo_uri, audit_log_mongo_uri,
   PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
   "The URI of the mogo server to be used.", NULL, NULL, default_audit_log_mongo_uri);
+#endif
 
 static struct st_mysql_sys_var* audit_log_system_variables[] =
 {
@@ -939,8 +954,10 @@ static struct st_mysql_sys_var* audit_log_system_variables[] =
   MYSQL_SYSVAR(syslog_ident),
   MYSQL_SYSVAR(syslog_priority),
   MYSQL_SYSVAR(syslog_facility),
+#ifdef AUDIT_HAVE_MONGO
   MYSQL_SYSVAR(mongo_uri),
   MYSQL_SYSVAR(mongo_collection),
+#endif
   NULL
 };
 
