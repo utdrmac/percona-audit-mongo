@@ -22,9 +22,11 @@ if (ENABLE_AUDIT_MONGO STREQUAL ON)
 	find_path(BSON_INCLUDE_DIR
 	  NAMES
 		libbson-1.0/bson.h
-	  HINTS
-		${BSON_ROOT_DIR}
-		${_BSON_INCLUDEDIR}
+		libbson-1.0/bcon.h
+		libmongoc-1.0/mongoc.h
+	  PATHS
+	    /usr
+	    /usr/local
 	  PATH_SUFFIXES
 		include
 	)
@@ -32,13 +34,17 @@ if (ENABLE_AUDIT_MONGO STREQUAL ON)
 	find_library(BSON_LIBRARY
       NAMES
         bson-1.0
-      HINTS
-        ${_BSON_LIBDIR}
+        mongoc-1.0
+      PATHS
+        /usr
+        /usr/local
       PATH_SUFFIXES
         lib
     )
 	
 	INCLUDE_DIRECTORIES(${BSON_INCLUDE_DIR})
+	LINK_DIRECTORIES(${BSON_LIBRARY})
+	
 	TARGET_LINK_LIBRARIES(audit_log ${BSON_LIBRARY})
 	
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAUDIT_HAVE_MONGO")
