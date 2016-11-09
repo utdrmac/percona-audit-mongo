@@ -132,7 +132,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	bson_t *bson;
 	
 	// Convert the *buf (JSON) string to BSON
-	bson = bson_new_from_json((uint8_t *)buf, ret, &error);
+	bson = bson_new_from_json((const uint8_t *)buf, ret, &error);
 	if (!bson)
 	{
 		// Failed to parse JSON string
@@ -165,12 +165,22 @@ static int audit_handler_mongo_flush(audit_handler_t *handler)
 	bson_t reply;
 	bson_error_t error;
 	bool retval;
+	char *str;
 	
 	retval = mongoc_client_command_simple(data->client, "admin", command, NULL, &reply, &error);
 	if (!retval)
 	{
 		fprintf(stderr, "Audit_Mongo: ping failure: %s\n", error.message);
+		
+		return 0;
 	}
+	
+	str = bson_as_json(&reply, NULL);
+	fprintf(stderr, "Audit_Mongo: Ping/Flush: %s\n", str);
+	
+	bson_free(str);
+	bson_destroy(command);
+	bson_destroy(&reply);
 	
 	return 0;
 }
