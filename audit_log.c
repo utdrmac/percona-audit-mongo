@@ -930,6 +930,7 @@ static MYSQL_SYSVAR_ENUM(syslog_priority, audit_log_syslog_priority,
        &audit_log_syslog_priority_typelib);
 
 #ifdef AUDIT_HAVE_MONGO
+// TODO: Support changing collection
 static MYSQL_SYSVAR_STR(mongo_collection, audit_log_mongo_collection,
   PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
   "The mongo collection to be used, if MONGODB handler is used.",
@@ -937,7 +938,8 @@ static MYSQL_SYSVAR_STR(mongo_collection, audit_log_mongo_collection,
 
 static MYSQL_SYSVAR_STR(mongo_uri, audit_log_mongo_uri,
   PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
-  "The URI of the mogo server to be used.", NULL, NULL, default_audit_log_mongo_uri);
+  "The URI of the mogo server to be used.",
+  NULL, NULL, default_audit_log_mongo_uri);
 #endif
 
 static struct st_mysql_sys_var* audit_log_system_variables[] =
