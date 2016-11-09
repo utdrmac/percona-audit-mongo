@@ -41,6 +41,9 @@ int audit_handler_mongo_close(audit_handler_t *handler);
 
 audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 {
+	mongoc_uri_t *c_uri;
+	audit_handler_mongo_data_t *data;
+	
 	audit_handler_t *handler = (audit_handler_t*)calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
 	if (handler == NULL)
 	{
@@ -50,9 +53,6 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		
 		return NULL;
 	}
-	
-	mongoc_uri_t *c_uri;
-	audit_handler_mongo_data_t *data;
 	
 	// Initialize mongo client internals
 	mongoc_init();
