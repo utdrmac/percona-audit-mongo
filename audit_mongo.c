@@ -27,7 +27,7 @@ struct audit_handler_mongo_data_struct
   size_t struct_size;
   
   mongoc_client_t *client;
-  mongoc_database_t *database;
+  char *database;
   mongoc_collection_t *collection;
   
   logger_prolog_func_t header;
@@ -76,7 +76,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		else
 		{
 			// Get the database from the URI
-			data->database = mongoc_uri_get_database(opts->uri);
+			data->database = mongoc_uri_get_database(c_uri);
 			if (strlen(data->database) == 0)
 			{
 				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
