@@ -15,7 +15,6 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #include "audit_handler.h"
-#include "log.h"
 
 #include <bson.h>
 #include <bcon.h>
@@ -51,7 +50,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 	{
 		// Initialize mongo client internals
 		mongoc_init();
-		sql_print_information("Audit_Mongo: Initialized mongoc\n");
+		fprintf(stderr, "Audit_Mongo: Initialized mongoc\n");
 		
 		// Init data struct and set info
 		data = (audit_handler_mongo_data_t*)(handler + 1);
@@ -63,7 +62,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		c_uri = mongoc_uri_new(opts->uri);
 		if (c_uri == NULL)
 		{
-			sql_print_error("Audit_Mongo: Failed to parse URI '%s'\n", opts->uri);
+			fprintf(stderr, "Audit_Mongo: Failed to parse URI '%s'\n", opts->uri);
 			goto error;
 		}
 		
@@ -71,7 +70,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		data->client = mongoc_client_new_from_uri(c_uri);
 		if (data->client == NULL)
 		{
-			sql_print_error("Audit_Mongo: Failed to init mongo client '%s'\n", opts->uri);
+			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'\n", opts->uri);
 			goto error;
 		}
 		else
@@ -80,7 +79,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 			data->database = mongoc_uri_get_database(opts->uri);
 			if (strlen(data->database) == 0)
 			{
-				sql_print_error("Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
+				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
 				goto error;
 			}
 			
@@ -134,8 +133,8 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!bson)
 	{
 		// Failed to parse JSON string
-		sql_print_error("Audit_Mongo: Error parsing JSON: %s\n", error.message);
-		sql_print_error("%s\n", buf);
+		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %s\n", error.message);
+		fprintf(stderr, "%s\n", buf);
 		
 		return 0;
 	}
@@ -146,7 +145,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, bson, NULL, &error))
 	{
 		// Failed to add document
-		sql_print_error("Audit_Mongo: Error inserting JSON: %s\n", error.message);
+		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %s\n", error.message);
 		ret = 0;
 	}
 	
@@ -167,7 +166,7 @@ static int audit_handler_mongo_flush(audit_handler_t *handler)
 	retval = mongoc_client_command_simple(data->client, "admin", command, NULL, &reply, &error);
 	if (!retval)
 	{
-		sql_print_error("Audit_Mongo: ping failure: %s\n", error.message);
+		fprintf(stderr, "Audit_Mongo: ping failure: %s\n", error.message);
 	}
 	
 	return 0;
@@ -185,7 +184,7 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 
 	free(handler);
 	
-	sql_print_information("Audit_Mongo: Closed\n");
+	fprintf(stderr, "Audit_Mongo: Closed\n");
 	
 	return 0;
 }
