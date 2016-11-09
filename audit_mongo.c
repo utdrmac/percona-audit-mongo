@@ -27,7 +27,7 @@ struct audit_handler_mongo_data_struct
   size_t struct_size;
   
   mongoc_client_t *client;
-  char *database;
+  const char *database;
   mongoc_collection_t *collection;
   
   logger_prolog_func_t header;
@@ -41,37 +41,42 @@ int audit_handler_mongo_close(audit_handler_t *handler);
 
 audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 {
+	audit_handler_t *handler = (audit_handler_t*)calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
+	if (handler == NULL)
+	{
+		fprintf(stderr, "Audit_Mongo: Failed to allocate handler\n");
+		free(handler);
+		handler = NULL;
+		
+		return NULL;
+	}
+	
 	mongoc_uri_t *c_uri;
 	audit_handler_mongo_data_t *data;
-	audit_handler_t *handler;
 	
-	handler = (audit_handler_t*)calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
-	if (handler != NULL)
+	// Initialize mongo client internals
+	mongoc_init();
+	fprintf(stderr, "Audit_Mongo: Initialized mongoc\n");
+	
+	// Init data struct and set info
+	data = (audit_handler_mongo_data_t*)(handler + 1);
+	data->struct_size = sizeof(audit_handler_mongo_data_t);
+	data->footer = opts->footer;
+	data->header = opts->header;
+	
+	// Parse client-provided URI for errors
+	c_uri = mongoc_uri_new(opts->uri);
+	if (c_uri == NULL)
 	{
-		// Initialize mongo client internals
-		mongoc_init();
-		fprintf(stderr, "Audit_Mongo: Initialized mongoc\n");
-		
-		// Init data struct and set info
-		data = (audit_handler_mongo_data_t*)(handler + 1);
-		data->struct_size = sizeof(audit_handler_mongo_data_t);
-		data->footer = opts->footer;
-		data->header = opts->header;
-		
-		// Parse client-provided URI for errors
-		c_uri = mongoc_uri_new(opts->uri);
-		if (c_uri == NULL)
-		{
-			fprintf(stderr, "Audit_Mongo: Failed to parse URI '%s'\n", opts->uri);
-			goto error;
-		}
-		
+		fprintf(stderr, "Audit_Mongo: Failed to parse URI '%s'\n", opts->uri);
+	}
+	else
+	{
 		// Create client connection struct
 		data->client = mongoc_client_new_from_uri(c_uri);
 		if (data->client == NULL)
 		{
 			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'\n", opts->uri);
-			goto error;
 		}
 		else
 		{
@@ -80,24 +85,25 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 			if (strlen(data->database) == 0)
 			{
 				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
-				goto error;
 			}
-			
-			// Set parameters for the mongo information
-			data->collection = mongoc_client_get_collection(data->client, data->database, opts->collection);
-			
-			// Set parameters for the handler struct
-			handler->data = data;
-			handler->write = audit_handler_mongo_write;
-			handler->flush = audit_handler_mongo_flush;
-			handler->close = audit_handler_mongo_close;
-			
-			// All is good
-			return handler;
+			else
+			{
+				// Set parameters for the mongo information
+				data->collection = mongoc_client_get_collection(data->client, data->database, opts->collection);
+		
+				// Set parameters for the handler struct
+				handler->data = data;
+				handler->write = audit_handler_mongo_write;
+				handler->flush = audit_handler_mongo_flush;
+				handler->close = audit_handler_mongo_close;
+		
+				// All is good
+				return handler;
+			}
 		}
 	}
 	
-error:
+	// Some error happened above
 	if (data->collection)
 		mongoc_collection_destroy(data->collection);
 	
@@ -114,7 +120,7 @@ error:
 	c_uri = NULL;
 	handler = NULL;
 	
-	return handler;
+	return NULL;
 }
 
 static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len)
