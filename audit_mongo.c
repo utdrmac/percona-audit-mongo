@@ -101,9 +101,6 @@ error:
 	if (data->collection)
 		mongoc_collection_destroy(data->collection);
 	
-	if (data->database)
-		mongoc_database_destroy(data->database);
-	
 	if (data->client)
 		mongoc_client_destroy(data->client);
 	
@@ -177,7 +174,6 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 {
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	
-	mongoc_database_destroy(data->database);
 	mongoc_collection_destroy(data->collection);
 	mongoc_client_destroy(data->client);
 	mongoc_cleanup();
