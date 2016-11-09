@@ -90,7 +90,10 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 			{
 				// Set parameters for the mongo information
 				data->collection = mongoc_client_get_collection(data->client, data->database, opts->collection);
-		
+				
+				// Proper error reporting
+				mongoc_client_set_error_api(data->client, MONGOC_ERROR_API_VERSION_2);
+				
 				// Set parameters for the handler struct
 				handler->data = data;
 				handler->write = audit_handler_mongo_write;
@@ -136,7 +139,8 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!bson)
 	{
 		// Failed to parse JSON string
-		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %s\n", error.message);
+		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s\n",
+			error.domain, error.code, error.message);
 		fprintf(stderr, "%s\n", buf);
 		
 		return 0;
@@ -148,7 +152,10 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, bson, NULL, &error))
 	{
 		// Failed to add document
-		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %s\n", error.message);
+		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
+			error.domain, error.code, error.message);
+		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		
 		ret = 0;
 	}
 	
