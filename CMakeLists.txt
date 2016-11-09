@@ -23,6 +23,7 @@ if (ENABLE_AUDIT_MONGO STREQUAL ON)
 		NAMES libmongoc-1.0/mongoc.h
 		PATHS /usr/include /usr/local/include
 	)
+	set(MONGOC_INCLUDE_DIR "${MONGOC_INCLUDE_DIR}/libmongoc-1.0")
 
 	find_library(MONGOC_LIBRARY
 		NAMES mongoc-1.0
