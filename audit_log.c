@@ -74,7 +74,7 @@ char *audit_log_mongo_uri;
 static int audit_log_syslog_facility_codes[]=
   { LOG_USER,   LOG_AUTHPRIV, LOG_CRON,   LOG_DAEMON, LOG_FTP,
     LOG_KERN,   LOG_LPR,      LOG_MAIL,   LOG_NEWS,
-#ifdef LOG_SECURITY)
+#if (defined LOG_SECURITY)
     LOG_SECURITY,
 #endif
     LOG_SYSLOG, LOG_AUTH,     LOG_UUCP,   LOG_LOCAL0, LOG_LOCAL1,
@@ -85,7 +85,7 @@ static int audit_log_syslog_facility_codes[]=
 static const char *audit_log_syslog_facility_names[]=
   { "LOG_USER",   "LOG_AUTHPRIV", "LOG_CRON",   "LOG_DAEMON", "LOG_FTP",
     "LOG_KERN",   "LOG_LPR",      "LOG_MAIL",   "LOG_NEWS",
-#ifdef LOG_SECURITY)
+#if (defined LOG_SECURITY)
     "LOG_SECURITY",
 #endif
     "LOG_SYSLOG", "LOG_AUTH",     "LOG_UUCP",   "LOG_LOCAL0", "LOG_LOCAL1",
