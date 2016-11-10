@@ -135,7 +135,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	
 	bson_error_t error;
-	bson_t *bson;
+	bson_t *bson, *document;
 	
 	// Convert the *buf (JSON) string to BSON
 	bson = bson_new_from_json((const uint8_t *)buf, -1, &error);
@@ -150,16 +150,33 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	
 	fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
 	
+	// Manually make bson for testing
+	document = BCON_NEW (
+      "name", "{",
+      "first", BCON_UTF8 ("Grace"),
+      "last", BCON_UTF8 ("Hopper"),
+      "}",
+      "languages", "[",
+      BCON_UTF8 ("MATH-MATIC"),
+      BCON_UTF8 ("FLOW-MATIC"),
+      BCON_UTF8 ("COBOL"),
+      "]",
+      "degrees", "[",
+      "{", "degree", BCON_UTF8 ("BA"), "school", BCON_UTF8 ("Vassar"), "}",
+      "{", "degree", BCON_UTF8 ("PhD"), "school", BCON_UTF8 ("Yale"), "}",
+      "]");
+	
+	
 	// Insert the "document"
 	// TODO: Investigate MONGOC_INSERT_NO_VALIDATE
 	// TODO: Investigate MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED
-	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, bson, NULL, &error))
+	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, document, NULL, &error))
 	{
 		// Failed to add document
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
-		//fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
 	}
 	
 	bson_destroy(bson);
