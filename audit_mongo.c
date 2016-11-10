@@ -139,7 +139,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	bson_t *bson;
 	
 	// Convert the *buf (JSON) string to BSON
-	bson = bson_new_from_json((const uint8_t *)buf, ret, &error);
+	bson = bson_new_from_json((const uint8_t *)buf, -1, &error);
 	if (!bson)
 	{
 		// Failed to parse JSON string
@@ -163,7 +163,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	
 	bson_destroy(bson);
 	
-	return 0;
+	return len;
 }
 
 static int audit_handler_mongo_flush(audit_handler_t *handler)
