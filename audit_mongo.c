@@ -34,9 +34,8 @@ struct audit_handler_mongo_data_struct
   logger_epilog_func_t footer;
 };
 
-static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len);
-static int audit_handler_mongo_flush(audit_handler_t *handler);
-static int audit_handler_mongo_flush(audit_handler_t *handler);
+int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len);
+int audit_handler_mongo_flush(audit_handler_t *handler);
 int audit_handler_mongo_close(audit_handler_t *handler);
 
 audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
@@ -131,7 +130,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 	return NULL;
 }
 
-static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len)
+int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len)
 {
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	
@@ -166,7 +165,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 	return len;
 }
 
-static int audit_handler_mongo_flush(audit_handler_t *handler)
+int audit_handler_mongo_flush(audit_handler_t *handler)
 {
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	bson_t *command = BCON_NEW("ping", BCON_INT32(1));
