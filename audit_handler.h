@@ -125,7 +125,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts);
 #endif
 
 // So other audit 'modules' can use this
-static void fprintf_timestamp(FILE *file);
+extern void fprintf_timestamp(FILE *file);
 
 #ifdef __cplusplus
 }
