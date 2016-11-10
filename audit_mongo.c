@@ -143,7 +143,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 			error.domain, error.code, error.message);
 		fprintf(stderr, "%s\n", buf);
 		
-		return 0;
+		return -1;
 	}
 	
 	// Insert the "document"
@@ -156,7 +156,7 @@ static int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, 
 			error.domain, error.code, error.message);
 		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
 		
-		ret = 0;
+		ret = -1;
 	}
 	
 	bson_destroy(bson);
