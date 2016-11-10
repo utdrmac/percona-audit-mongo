@@ -148,6 +148,8 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf(stderr, "%s\n", buf);
 	}
 	
+	fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
+	
 	// Insert the "document"
 	// TODO: Investigate MONGOC_INSERT_NO_VALIDATE
 	// TODO: Investigate MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED
@@ -157,7 +159,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
-		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		//fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
 	}
 	
 	bson_destroy(bson);
