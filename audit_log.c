@@ -591,7 +591,7 @@ int init_new_log_file()
     if (log_handler == NULL)
     {
       fprintf_timestamp(stderr);
-      fprintf(stderr, "Cannot open file %s. ", audit_log_file);
+      fprintf(stderr, "Cannot open connection to '%s'. ", audit_log_mongo_uri);
       perror("Error: ");
       return(1);
     }
