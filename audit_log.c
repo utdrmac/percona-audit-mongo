@@ -121,7 +121,7 @@ ulonglong next_record_id()
 #define MAX_TIMESTAMP_SIZE  25
 
 
-static
+extern
 void fprintf_timestamp(FILE *file)
 {
   char timebuf[50];
