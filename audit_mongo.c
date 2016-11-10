@@ -136,6 +136,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	
 	bson_error_t error;
 	bson_t *bson, *document;
+	char *str;
 	
 	// Convert the *buf (JSON) string to BSON
 	bson = bson_new_from_json((const uint8_t *)buf, -1, &error);
@@ -148,7 +149,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf(stderr, "%s\n", buf);
 	}
 	
-	fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
+	//fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
 	
 	// Manually make bson for testing
 	document = BCON_NEW (
@@ -176,7 +177,12 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
-		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		//fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		
+		str = bson_as_json(document, NULL);
+		fprintf_timestamp(stderr);
+		fprintf(stderr, "BSON: %s\n", str);
+		bson_free (str);
 	}
 	
 	bson_destroy(bson);
