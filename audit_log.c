@@ -150,7 +150,7 @@ char *make_timestamp(char *buf, size_t buf_len, time_t t)
 }
 
 static
-char *make_record_id(char *buf, size_t buf_len)
+char *make_record_id(char *buf, size_t buf_len, time_t t)
 {
   struct tm tm;
   size_t len;
@@ -158,8 +158,7 @@ char *make_record_id(char *buf, size_t buf_len)
   memset(&tm, 0, sizeof(tm));
   len= snprintf(buf, buf_len, "%llu_", next_record_id());
 
-  strftime(buf + len, buf_len - len,
-           "%FT%T", gmtime_r(&log_file_time, &tm));
+  strftime(buf + len, buf_len - len, "%FT%T", gmtime_r(&t, &tm));
 
   return buf;
 }
@@ -360,7 +359,7 @@ size_t audit_log_audit_record(char *buf, size_t buflen,
   return my_snprintf(buf, buflen,
                      format_string[audit_log_format],
                      name,
-                     make_record_id(id_str, sizeof(id_str)),
+                     make_record_id(id_str, sizeof(id_str), t),
                      make_timestamp(timestamp, sizeof(timestamp), t),
                      server_version,
                      make_argv(arg_buf, sizeof(arg_buf),
@@ -425,7 +424,7 @@ size_t audit_log_general_record(char *buf, size_t buflen,
   return my_snprintf(buf, buflen,
                      format_string[audit_log_format],
                      name,
-                     make_record_id(id_str, sizeof(id_str)),
+                     make_record_id(id_str, sizeof(id_str), t),
                      make_timestamp(timestamp, sizeof(timestamp), t),
                      event->general_sql_command.str,
                      event->general_thread_id,
@@ -507,7 +506,7 @@ size_t audit_log_connection_record(char *buf, size_t buflen,
   return my_snprintf(buf, buflen,
                      format_string[audit_log_format],
                      name,
-                     make_record_id(id_str, sizeof(id_str)),
+                     make_record_id(id_str, sizeof(id_str), t),
                      make_timestamp(timestamp, sizeof(timestamp), t),
                      event->thread_id,
                      event->status,
