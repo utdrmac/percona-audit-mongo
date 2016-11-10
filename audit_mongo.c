@@ -47,6 +47,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 	audit_handler_t *handler = (audit_handler_t*)calloc(sizeof(audit_handler_t) + sizeof(audit_handler_mongo_data_t), 1);
 	if (handler == NULL)
 	{
+		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Failed to allocate handler\n");
 		free(handler);
 		handler = NULL;
