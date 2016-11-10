@@ -234,6 +234,7 @@ void json_escape(const char *in, size_t *inlen, char *out, size_t *outlen)
     { '"',  2, "\\\"" },
     { '\r',  2, "\\r" },
     { '\n',  2, "\\n" },
+    { '\t',  2, "\\t" },
     { 0,  0, NULL }
   };
 
