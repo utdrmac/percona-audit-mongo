@@ -181,39 +181,22 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		return 0;
 	}
 	
-	//fprintf_timestamp(stderr);
-	//fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
-	
-	// Manually make bson for testing
-	document = BCON_NEW (
-		"audit_record", "{",
-			"name", BCON_UTF8("Query"),
-			"timestamp", BCON_UTF8("2016-11-10T23:50:40"),
-			"command_class", BCON_UTF8("show_slave_status"),
-			"connection_id", BCON_INT32(1107),
-			"status", BCON_INT32(0),
-			"user", BCON_UTF8("mboehm"), "}"
-	);
+	fprintf_timestamp(stderr);
+	fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
 	
 	// Insert the "document"
 	// TODO: Investigate MONGOC_INSERT_NO_VALIDATE
 	// TODO: Investigate MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED
-	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, document, NULL, &error))
+	if (!mongoc_collection_insert(data->collection, MONGOC_INSERT_NONE, bson, NULL, &error))
 	{
 		// Failed to add document
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
-		//fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
-		
-		str = bson_as_json(document, NULL);
-		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: BSON: %s\n", str);
-		bson_free (str);
+		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
 	}
 	
 	bson_destroy(bson);
-	bson_destroy(document);
 	
 	mysql_mutex_unlock(&data->mutex);
 	
