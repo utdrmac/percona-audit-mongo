@@ -63,7 +63,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 	if (handler == NULL)
 	{
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Failed to allocate handler");
+		fprintf(stderr, "Audit_Mongo: Failed to allocate handler\n");
 		free(handler);
 		handler = NULL;
 		
@@ -95,7 +95,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		if (data->client == NULL)
 		{
 			fprintf_timestamp(stderr);
-			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'", opts->uri);
+			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'\n", opts->uri);
 		}
 		else
 		{
@@ -104,7 +104,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 			if (strlen(data->database) == 0)
 			{
 				fprintf_timestamp(stderr);
-				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'", opts->uri);
+				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
 			}
 			else
 			{
@@ -131,7 +131,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 				handler->close = audit_handler_mongo_close;
 				
 				fprintf_timestamp(stderr);
-				fprintf(stderr, "Audit_Mongo: Connected to '%s'", opts->uri);
+				fprintf(stderr, "Audit_Mongo: Connected to '%s'\n", opts->uri);
 				
 				// All is good
 				return handler;
@@ -175,7 +175,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	{
 		// Failed to parse JSON string
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s",
+		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
 		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 		
@@ -190,7 +190,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	{
 		// Failed to add document
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s",
+		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
 		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 	}
@@ -219,14 +219,14 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 	if (!retval)
 	{
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: ping failure: %s", error.message);
+		fprintf(stderr, "Audit_Mongo: ping failure: %s\n", error.message);
 		
 		return 0;
 	}
 	
 	str = bson_as_json(&reply, NULL);
 	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo: Ping/Flush: %s", str);
+	fprintf(stderr, "Audit_Mongo: Ping/Flush: %s\n", str);
 	
 	bson_free(str);
 	bson_destroy(command);
@@ -251,7 +251,7 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 	free(handler);
 	
 	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo: Connection Closed");
+	fprintf(stderr, "Audit_Mongo: Connection Closed\n");
 	
 	return 0;
 }
