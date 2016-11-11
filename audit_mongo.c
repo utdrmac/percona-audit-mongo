@@ -103,7 +103,10 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 				handler->write = audit_handler_mongo_write;
 				handler->flush = audit_handler_mongo_flush;
 				handler->close = audit_handler_mongo_close;
-		
+				
+				fprintf_timestamp(stderr);
+				fprintf(stderr, "Audit_Mongo: Connected to '%s'\n", opts->uri);
+				
 				// All is good
 				return handler;
 			}
@@ -146,27 +149,24 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
-		fprintf(stderr, "%s\n", buf);
+		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		
+		return 0;
 	}
 	
+	//fprintf_timestamp(stderr);
 	//fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
 	
 	// Manually make bson for testing
 	document = BCON_NEW (
-      "name", "{",
-      "first", BCON_UTF8 ("Grace"),
-      "last", BCON_UTF8 ("Hopper"),
-      "}",
-      "languages", "[",
-      BCON_UTF8 ("MATH-MATIC"),
-      BCON_UTF8 ("FLOW-MATIC"),
-      BCON_UTF8 ("COBOL"),
-      "]",
-      "degrees", "[",
-      "{", "degree", BCON_UTF8 ("BA"), "school", BCON_UTF8 ("Vassar"), "}",
-      "{", "degree", BCON_UTF8 ("PhD"), "school", BCON_UTF8 ("Yale"), "}",
-      "]");
-	
+		"audit_record", "{",
+			"name", BCON_UTF8("Query"),
+			"timestamp", BCON_UTF8("2016-11-10T23:50:40"),
+			"command_class", BCON_UTF8("show_slave_status"),
+			"connection_id", BCON_INT32(1107),
+			"status", BCON_INT32(0),
+			"user", BCON_UTF8("mboehm"), "}"
+	);
 	
 	// Insert the "document"
 	// TODO: Investigate MONGOC_INSERT_NO_VALIDATE
@@ -181,11 +181,12 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		
 		str = bson_as_json(document, NULL);
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "BSON: %s\n", str);
+		fprintf(stderr, "Audit_Mongo: BSON: %s\n", str);
 		bson_free (str);
 	}
 	
 	bson_destroy(bson);
+	bson_destroy(document);
 	
 	return len;
 }
@@ -232,7 +233,7 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 	free(handler);
 	
 	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo: Closed\n");
+	fprintf(stderr, "Audit_Mongo: Connection Closed\n");
 	
 	return 0;
 }
