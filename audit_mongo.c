@@ -164,6 +164,9 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	bson_t *bson, *document;
 	char *str;
 	
+	// Protect Mongo business
+	mysql_mutex_lock(&data->mutex);
+	
 	// Convert the *buf (JSON) string to BSON
 	bson = bson_new_from_json((const uint8_t *)buf, -1, &error);
 	if (!bson)
@@ -174,6 +177,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 			error.domain, error.code, error.message);
 		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
 		
+		mysql_mutex_unlock(&data->mutex);
 		return 0;
 	}
 	
@@ -211,6 +215,8 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	bson_destroy(bson);
 	bson_destroy(document);
 	
+	mysql_mutex_unlock(&data->mutex);
+	
 	return len;
 }
 
@@ -223,6 +229,9 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 	bson_error_t error;
 	bool retval;
 	char *str;
+	
+	// Protect mongo business
+	mysql_mutex_lock(&data->mutex);
 	
 	retval = mongoc_client_command_simple(data->client, "admin", command, NULL, &reply, &error);
 	if (!retval)
@@ -240,6 +249,8 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 	bson_free(str);
 	bson_destroy(command);
 	bson_destroy(&reply);
+	
+	mysql_mutex_unlock(&data->mutex);
 	
 	return 0;
 }
