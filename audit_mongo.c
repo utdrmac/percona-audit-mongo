@@ -41,8 +41,8 @@ struct audit_handler_mongo_data_struct
 /* For performance_schema */
 #if defined(HAVE_PSI_INTERFACE)
 static PSI_mutex_key audit_mongo_mutex;
-static PSI_mutex_info mutex_list[]=
-	{{ &audit_mongo_mutex, "audit_mongo::lock", PSI_FLAG_GLOBAL }};
+static PSI_mutex_info mutex_key_list[]=
+	{{ &audit_mongo_mutex, "audit_log_mongo::lock", PSI_FLAG_GLOBAL }};
 #else
 #define audit_mongo_LOCK 0
 #endif
@@ -112,6 +112,13 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 				mongoc_client_set_error_api(data->client, MONGOC_ERROR_API_VERSION_2);
 				
 				// Mutex protection
+#ifdef HAVE_PSI_INTERFACE
+				if (PSI_server)
+				{
+					PSI_server->register_mutex("server_audit",
+						mutex_key_list, array_elements(mutex_key_list));
+				}
+#endif
 				mysql_mutex_init(audit_mongo_mutex, &data->mutex, MY_MUTEX_INIT_FAST);
 				
 				// Set parameters for the handler struct
