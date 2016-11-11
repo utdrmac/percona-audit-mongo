@@ -16,9 +16,45 @@
 
 #include "audit_handler.h"
 
+#include <my_pthread.h>
+
 #include <bson.h>
 #include <bcon.h>
 #include <mongoc.h>
+
+#ifndef FLOGGER_NO_PSI
+  #define flogger_mutex_init(A,B,C) \
+            if ((B)->thread_safe) \
+              mysql_mutex_init(A,&((B)->lock),C)
+
+  #define flogger_mutex_destroy(A) \
+            if ((A)->thread_safe) \
+              mysql_mutex_destroy(&((A)->lock))
+
+  #define flogger_mutex_lock(A) \
+            if ((A)->thread_safe) \
+              mysql_mutex_lock(&((A)->lock))
+
+  #define flogger_mutex_unlock(A) \
+            if ((A)->thread_safe) \
+              mysql_mutex_unlock(&((A)->lock))
+#else
+  #define flogger_mutex_init(A,B,C) \
+            if ((B)->thread_safe) \
+              pthread_mutex_init(&((B)->lock.m_mutex), C)
+
+  #define flogger_mutex_destroy(A) \
+            if ((A)->thread_safe) \
+              pthread_mutex_destroy(&((A)->lock.m_mutex))
+
+  #define flogger_mutex_lock(A) \
+            if ((A)->thread_safe) \
+              pthread_mutex_lock(&((A)->lock.m_mutex))
+
+  #define flogger_mutex_unlock(A) \
+            if ((A)->thread_safe) \
+              pthread_mutex_unlock(&((A)->lock.m_mutex))
+#endif /*!FLOGGER_NO_PSI*/
 
 typedef struct audit_handler_mongo_data_struct audit_handler_mongo_data_t;
 
