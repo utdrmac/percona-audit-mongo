@@ -14,6 +14,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+// TODO: Add counter of number of audit events
+// TODO: Add logic if mongod goes away
+
 #include "audit_handler.h"
 
 #include <my_pthread.h>
@@ -44,7 +47,7 @@ static PSI_mutex_key audit_mongo_mutex;
 static PSI_mutex_info mutex_key_list[]=
 	{{ &audit_mongo_mutex, "audit_log_mongo::lock", PSI_FLAG_GLOBAL }};
 #else
-#define audit_mongo_LOCK 0
+#define audit_mongo_mutex 0
 #endif
 
 int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len);
@@ -60,7 +63,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 	if (handler == NULL)
 	{
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Failed to allocate handler\n");
+		fprintf(stderr, "Audit_Mongo: Failed to allocate handler");
 		free(handler);
 		handler = NULL;
 		
@@ -92,7 +95,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 		if (data->client == NULL)
 		{
 			fprintf_timestamp(stderr);
-			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'\n", opts->uri);
+			fprintf(stderr, "Audit_Mongo: Failed to init mongo client '%s'", opts->uri);
 		}
 		else
 		{
@@ -101,7 +104,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 			if (strlen(data->database) == 0)
 			{
 				fprintf_timestamp(stderr);
-				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'\n", opts->uri);
+				fprintf(stderr, "Audit_Mongo: No database specified in URI: '%s'", opts->uri);
 			}
 			else
 			{
@@ -128,7 +131,7 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 				handler->close = audit_handler_mongo_close;
 				
 				fprintf_timestamp(stderr);
-				fprintf(stderr, "Audit_Mongo: Connected to '%s'\n", opts->uri);
+				fprintf(stderr, "Audit_Mongo: Connected to '%s'", opts->uri);
 				
 				// All is good
 				return handler;
@@ -172,9 +175,9 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	{
 		// Failed to parse JSON string
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s\n",
+		fprintf(stderr, "Audit_Mongo: Error parsing JSON: %d.%d: %s",
 			error.domain, error.code, error.message);
-		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 		
 		mysql_mutex_unlock(&data->mutex);
 		return 0;
@@ -187,9 +190,9 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	{
 		// Failed to add document
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
+		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s",
 			error.domain, error.code, error.message);
-		fprintf(stderr, "Audit_Mongo: JSON: %s\n", buf);
+		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 	}
 	
 	bson_destroy(bson);
@@ -216,14 +219,14 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 	if (!retval)
 	{
 		fprintf_timestamp(stderr);
-		fprintf(stderr, "Audit_Mongo: ping failure: %s\n", error.message);
+		fprintf(stderr, "Audit_Mongo: ping failure: %s", error.message);
 		
 		return 0;
 	}
 	
 	str = bson_as_json(&reply, NULL);
 	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo: Ping/Flush: %s\n", str);
+	fprintf(stderr, "Audit_Mongo: Ping/Flush: %s", str);
 	
 	bson_free(str);
 	bson_destroy(command);
@@ -248,7 +251,7 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 	free(handler);
 	
 	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo: Connection Closed\n");
+	fprintf(stderr, "Audit_Mongo: Connection Closed");
 	
 	return 0;
 }
