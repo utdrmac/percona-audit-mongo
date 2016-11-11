@@ -22,53 +22,30 @@
 #include <bcon.h>
 #include <mongoc.h>
 
-#ifndef FLOGGER_NO_PSI
-  #define flogger_mutex_init(A,B,C) \
-            if ((B)->thread_safe) \
-              mysql_mutex_init(A,&((B)->lock),C)
-
-  #define flogger_mutex_destroy(A) \
-            if ((A)->thread_safe) \
-              mysql_mutex_destroy(&((A)->lock))
-
-  #define flogger_mutex_lock(A) \
-            if ((A)->thread_safe) \
-              mysql_mutex_lock(&((A)->lock))
-
-  #define flogger_mutex_unlock(A) \
-            if ((A)->thread_safe) \
-              mysql_mutex_unlock(&((A)->lock))
-#else
-  #define flogger_mutex_init(A,B,C) \
-            if ((B)->thread_safe) \
-              pthread_mutex_init(&((B)->lock.m_mutex), C)
-
-  #define flogger_mutex_destroy(A) \
-            if ((A)->thread_safe) \
-              pthread_mutex_destroy(&((A)->lock.m_mutex))
-
-  #define flogger_mutex_lock(A) \
-            if ((A)->thread_safe) \
-              pthread_mutex_lock(&((A)->lock.m_mutex))
-
-  #define flogger_mutex_unlock(A) \
-            if ((A)->thread_safe) \
-              pthread_mutex_unlock(&((A)->lock.m_mutex))
-#endif /*!FLOGGER_NO_PSI*/
-
 typedef struct audit_handler_mongo_data_struct audit_handler_mongo_data_t;
 
 struct audit_handler_mongo_data_struct
 {
-  size_t struct_size;
-  
-  mongoc_client_t *client;
-  const char *database;
-  mongoc_collection_t *collection;
-  
-  logger_prolog_func_t header;
-  logger_epilog_func_t footer;
+	size_t struct_size;
+	
+	mongoc_client_t *client;
+	const char *database;
+	mongoc_collection_t *collection;
+	
+	logger_prolog_func_t header;
+	logger_epilog_func_t footer;
+	
+	mysql_mutex_t mutex;
 };
+
+/* For performance_schema */
+#if defined(HAVE_PSI_INTERFACE)
+static PSI_mutex_key audit_mongo_mutex;
+static PSI_mutex_info mutex_list[]=
+	{{ &audit_mongo_mutex, "audit_mongo::lock", PSI_FLAG_GLOBAL }};
+#else
+#define audit_mongo_LOCK 0
+#endif
 
 int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t len);
 int audit_handler_mongo_flush(audit_handler_t *handler);
@@ -133,6 +110,9 @@ audit_handler_t *audit_handler_mongo_open(audit_handler_mongo_config_t *opts)
 				
 				// Proper error reporting
 				mongoc_client_set_error_api(data->client, MONGOC_ERROR_API_VERSION_2);
+				
+				// Mutex protection
+				mysql_mutex_init(audit_mongo_mutex, &data->mutex, MY_MUTEX_INIT_FAST);
 				
 				// Set parameters for the handler struct
 				handler->data = data;
@@ -261,6 +241,8 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 int audit_handler_mongo_close(audit_handler_t *handler)
 {
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
+	
+	mysql_mutex_destroy(&data->mutex);
 	
 	mongoc_collection_destroy(data->collection);
 	mongoc_client_destroy(data->client);
