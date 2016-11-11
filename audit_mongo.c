@@ -161,8 +161,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	
 	bson_error_t error;
-	bson_t *bson, *document;
-	char *str;
+	bson_t *bson;
 	
 	// Protect Mongo business
 	mysql_mutex_lock(&data->mutex);
@@ -180,9 +179,6 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		mysql_mutex_unlock(&data->mutex);
 		return 0;
 	}
-	
-	fprintf_timestamp(stderr);
-	fprintf(stderr, "Audit_Mongo_Pre: JSON: %s\n", buf);
 	
 	// Insert the "document"
 	// TODO: Investigate MONGOC_INSERT_NO_VALIDATE
