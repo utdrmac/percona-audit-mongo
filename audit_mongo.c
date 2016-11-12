@@ -180,6 +180,7 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 		
 		mysql_mutex_unlock(&data->mutex);
+		
 		return 0;
 	}
 	
@@ -192,6 +193,8 @@ int audit_handler_mongo_write(audit_handler_t *handler, const char *buf, size_t 
 		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: Error inserting JSON: %d.%d: %s\n",
 			error.domain, error.code, error.message);
+		
+		fprintf_timestamp(stderr);
 		fprintf(stderr, "Audit_Mongo: JSON: %s", buf);
 	}
 	
