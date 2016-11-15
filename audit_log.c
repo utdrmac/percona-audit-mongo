@@ -134,7 +134,7 @@ char *make_timestamp(char *buf, size_t buf_len, time_t t)
   struct tm tm;
 
   memset(&tm, 0, sizeof(tm));
-  strftime(buf, buf_len, "%FT%T UTC", gmtime_r(&t, &tm));
+  strftime(buf, buf_len, "%FT%T", gmtime_r(&t, &tm));
 
   return buf;
 }
@@ -224,6 +224,7 @@ void json_escape(const char *in, size_t *inlen, char *out, size_t *outlen)
     { '"',  2, "\\\"" },
     { '\r',  2, "\\r" },
     { '\n',  2, "\\n" },
+    { '\t',  2, "\\t" },
     { 0,  0, NULL }
   };
 
