@@ -240,8 +240,7 @@ int audit_handler_mongo_flush(audit_handler_t *handler)
 	return 0;
 }
 
-
-int audit_handler_mongo_close(audit_handler_t *handler)
+static int audit_handler_mongo_close(audit_handler_t *handler)
 {
 	audit_handler_mongo_data_t *data = (audit_handler_mongo_data_t*)handler->data;
 	
@@ -258,3 +257,166 @@ int audit_handler_mongo_close(audit_handler_t *handler)
 	
 	return 0;
 }
+
+static void audit_log_mongo_flush_update(
+	MYSQL_THD thd __attribute__((unused)),
+	struct st_mysql_sys_var *var __attribute__((unused)),
+	void *var_ptr __attribute__((unused)),
+	const void *save)
+{
+	char new_val = *(const char *)(save);
+	
+	if (new_val != audit_log_flush && new_val)
+	{
+		audit_log_flush = TRUE;
+		audit_log_mongo_reopen();
+		audit_log_flush = FALSE;
+	}
+}
+
+static int is_event_class_allowed_by_policy(unsigned int class, enum audit_log_policy_t policy)
+{
+	static unsigned int class_mask[] =
+	{
+		MYSQL_AUDIT_GENERAL_CLASSMASK | MYSQL_AUDIT_CONNECTION_CLASSMASK, /* ALL */
+		0,                                                             /* NONE */
+		MYSQL_AUDIT_CONNECTION_CLASSMASK,                              /* LOGINS */
+		MYSQL_AUDIT_GENERAL_CLASSMASK,                                 /* QUERIES */
+	};
+	
+	return (class_mask[policy] & (1 << class)) != 0;
+}
+
+static void audit_log_notify(MYSQL_THD thd __attribute__((unused)), unsigned int event_class, const void *event)
+{
+	char buf[1024];
+	size_t len;
+
+	if (!is_event_class_allowed_by_policy(event_class, audit_log_policy))
+		return;
+
+	if (event_class == MYSQL_AUDIT_GENERAL_CLASS)
+	{
+		const struct mysql_event_general *event_general = (const struct mysql_event_general *)event;
+		switch (event_general->event_subclass)
+		{
+			case MYSQL_AUDIT_GENERAL_STATUS:
+				if (event_general->general_command_length == 4 &&
+					strncmp(event_general->general_command, "Quit", 4) == 0)
+					break;
+				
+				len = audit_log_mongo_general_record(buf, sizeof(buf),
+					event_general->general_command,
+					event_general->general_time,
+					event_general->general_error_code,
+					event_general);
+				
+				audit_log_mongo_write(buf, len);
+				
+				break;
+		}
+	}
+	else if (event_class == MYSQL_AUDIT_CONNECTION_CLASS)
+	{
+		const struct mysql_event_connection *event_connection = (const struct mysql_event_connection *)event;
+		switch (event_connection->event_subclass)
+		{
+			case MYSQL_AUDIT_CONNECTION_CONNECT:
+				len = audit_log_mongo_connection_record(buf, sizeof(buf),
+					"Connect", time(NULL), event_connection);
+				audit_log_mongo_write(buf, len);
+				break;
+			case MYSQL_AUDIT_CONNECTION_DISCONNECT:
+				len = audit_log_mongo_connection_record(buf, sizeof(buf),
+					"Quit", time(NULL), event_connection);
+				audit_log_mongo_write(buf, len);
+				break;
+			case MYSQL_AUDIT_CONNECTION_CHANGE_USER:
+				len = audit_log_mongo_connection_record(buf, sizeof(buf),
+					"Change user", time(NULL), event_connection);
+				audit_log_mongo_write(buf, len);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+static const char *audit_log_mongo_policy_names[] = { "ALL", "NONE", "LOGINS", "QUERIES", 0 };
+
+static TYPELIB audit_log_mongo_policy_typelib =
+{
+	array_elements(audit_log_mongo_policy_names) - 1, "audit_log_policy_typelib",
+	audit_log_mongo_policy_names, NULL
+};
+
+static MYSQL_SYSVAR_ENUM(policy, audit_log_policy, PLUGIN_VAR_RQCMDARG,
+	"The policy controlling the information written by the audit log "
+	"plugin to its log file.", NULL, NULL, ALL,
+	&audit_log_policy_typelib);
+
+static MYSQL_SYSVAR_BOOL(flush, audit_log_flush,
+	PLUGIN_VAR_OPCMDARG, "Close and reopen the connection.", NULL,
+	audit_log_mongo_flush_update, 0);
+
+// TODO: Support changing collection
+static MYSQL_SYSVAR_STR(mongo_collection, audit_log_mongo_collection,
+	PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
+	"The mongo collection to be used, if MONGODB handler is used.",
+	NULL, NULL, default_audit_log_mongo_collection);
+
+static MYSQL_SYSVAR_STR(mongo_uri, audit_log_mongo_uri,
+	PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_MEMALLOC,
+	"The URI of the mogo server to be used.",
+	NULL, NULL, default_audit_log_mongo_uri);
+
+static struct st_mysql_sys_var* audit_log_mongo_variables[] =
+{
+	MYSQL_SYSVAR(flush),
+	MYSQL_SYSVAR(mongo_uri),
+	MYSQL_SYSVAR(mongo_collection),
+	NULL
+};
+
+
+/*
+ * Plugin type-specific descriptor
+ */
+static struct st_mysql_audit audit_log_mongo_descriptor=
+{
+	MYSQL_AUDIT_INTERFACE_VERSION,                    /* interface version    */
+	NULL,                                             /* release_thd function */
+	audit_log_mongo_notify,                           /* notify function      */
+	{ MYSQL_AUDIT_GENERAL_CLASSMASK |
+		MYSQL_AUDIT_CONNECTION_CLASSMASK }              /* class mask           */
+};
+
+/*
+ * Plugin status variables for SHOW STATUS
+ */
+static struct st_mysql_show_var audit_log_mongo_status_variables[]=
+{
+	{ 0, 0, 0}
+};
+
+
+/*
+ * Plugin library descriptor
+ */
+mysql_declare_plugin(audit_log)
+{
+	MYSQL_AUDIT_PLUGIN,							/* type							   */
+	&audit_log_mongo_descriptor,					/* descriptor					   */
+	"audit_log_mongo",							/* name							   */
+	"Percona LLC and/or its affiliates.",			/* author						   */
+	"Audit log (Mongo)",							/* description					   */
+	PLUGIN_LICENSE_GPL,
+	audit_log_mongo_plugin_init,					/* init function (when loaded)	   */
+	audit_log_mongo_plugin_deinit,				/* deinit function (when unloaded) */
+	PLUGIN_VERSION,								/* version						   */
+	audit_log_mongo_status_variables,				/* status variables				   */
+	audit_log_mongo_system_variables,				/* system variables				   */
+	NULL,
+	0,
+}
+mysql_declare_plugin_end;
